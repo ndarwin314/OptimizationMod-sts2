@@ -7,7 +7,7 @@ namespace testMod.testModCode.Optimization;
 
 public class NetOptimizer
 {
-    //[HarmonyPatch(typeof(NetCombatCardDb), nameof(NetCombatCardDb.GetCardId))]
+    [HarmonyPatch(typeof(NetCombatCardDb), nameof(NetCombatCardDb.GetCardId))]
     class ID
     {
         public static bool Prefix(CardModel card, NetCombatCardDb __instance)

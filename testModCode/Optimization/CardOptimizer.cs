@@ -9,7 +9,7 @@ namespace testMod.testModCode.Optimization;
 
 public class CardOptimizer
 {
-    public static Dictionary<CardModel, CardPile?> CardPileMap = new ();
+    public static Dictionary<CardModel, CardPile?> CardPileMap = new (10000);
 
     [HarmonyPatch(typeof(CardModel), nameof(CardModel.Pile), MethodType.Getter)]
     class CardPileGetter
@@ -17,16 +17,11 @@ public class CardOptimizer
         [HarmonyPrefix]
         static bool Prefix(CardModel __instance, ref CardPile? __result)
         {
-            var owner = __instance._owner;
-            if (owner == null)
-                __result = null;
-            else
-            {
-                var temp = CardPileMap.GetValueOrDefault(__instance);
-                if (temp == null)
-                    CardPileMap[__instance] = __result;
-                __result = temp;
-            }
+            var temp = CardPileMap.GetValueOrDefault(__instance);
+            if (temp == null)
+                CardPileMap[__instance] = null;
+            
+            __result = temp;
             
             return false;
         }
@@ -36,7 +31,8 @@ public class CardOptimizer
     [HarmonyPatch(typeof(CardPile), nameof(CardPile.AddInternal))]
     static class AddInternal
     {
-        static void Prefix(CardModel card, CardPile __instance)
+        [HarmonyPostfix]
+        static void Postfix(CardModel card, CardPile __instance)
         {
             CardPileMap[card] = __instance;
         }
@@ -45,7 +41,8 @@ public class CardOptimizer
     [HarmonyPatch(typeof(CardPile), nameof(CardPile.RemoveInternal))]
     static class RemoveInternal
     {
-        static void Prefix(CardModel card, CardPile __instance)
+        [HarmonyPostfix]
+        static void Postfix(CardModel card, CardPile __instance)
         {
             CardPileMap[card] = null;
         }
@@ -55,7 +52,7 @@ public class CardOptimizer
     static class AddCard
     {
         [HarmonyPostfix]
-        static void  Prefix(CardModel card)
+        static void Postfix(CardModel card)
         {
             CardPileMap[card] = null;
         }
