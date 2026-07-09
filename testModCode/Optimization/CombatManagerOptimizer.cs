@@ -1,0 +1,106 @@
+using HarmonyLib;
+using Godot;
+using MegaCrit.Sts2.Core.Achievements;
+using MegaCrit.Sts2.Core.Combat.History;
+using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Context;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Multiplayer;
+using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.GameActions;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Hooks;
+using MegaCrit.Sts2.Core.Logging;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Combat;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+
+namespace testMod.testModCode.Optimization;
+
+[HarmonyPatch]
+public static class CombatManagerOptimizer
+{ 
+  [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.SetupPlayerTurn))]
+  class StartTurn
+    {
+      private static bool InnateHelper(CardModel card)
+      {
+        return card.LocalKeywords.Contains(CardKeyword.Innate);
+      }
+      
+      private static async Task Helper(Player player, HookPlayerChoiceContext playerChoiceContext, CombatManager __instance)
+      {
+        if (__instance._state == null || player.PlayerCombatState == null)
+        {
+          Log.Warn($"Combat state is null. Assuming that the run has been cleaned up. (CombatState: {__instance._state} PlayerCombatState: {player.PlayerCombatState})");
+        }
+        else
+        {
+          CombatState state = __instance._state;
+          if (Hook.ShouldPlayerResetEnergy(state, player))
+          {
+            SfxCmd.Play("event:/sfx/ui/gain_energy");
+            player.PlayerCombatState.ResetEnergy();
+          }
+          else
+            player.PlayerCombatState.AddMaxEnergyToCurrent();
+          await Hook.AfterEnergyReset(state, player);
+          CancellationToken combatCt = __instance.CombatCt;
+          combatCt.ThrowIfCancellationRequested();
+          await Hook.BeforeHandDraw(state, player, playerChoiceContext);
+          combatCt = __instance.CombatCt;
+          combatCt.ThrowIfCancellationRequested();
+          Decimal handDraw = Hook.ModifyHandDraw(state, player, 5M, out var modifiers);
+          await Hook.AfterModifyingHandDraw(state, modifiers);
+          combatCt = __instance.CombatCt;
+          combatCt.ThrowIfCancellationRequested();
+          if (player.PlayerCombatState.TurnNumber == 1)
+          {
+            CardPile pile = PileType.Draw.GetPile(player);
+            var cardsBottom = pile.Cards.Where(c =>
+            {
+              EnchantmentModel? enchantment = c.Enchantment;
+              return enchantment is { ShouldStartAtBottomOfDrawPile: true };
+            }).ToList();
+            
+            for (int i=0; i<cardsBottom.Count; i++)
+            {
+              var card = cardsBottom[i];
+              
+              pile._cards.RemoveAt(i);
+              pile._cards.Add(card);
+            }
+            var cardsInnate = pile.Cards.Where(InnateHelper).Except(cardsBottom).ToList();
+            for (int i=0; i<cardsInnate.Count; i++)
+            {
+              var card = cardsInnate[i];
+              pile._cards.RemoveAt(i);
+              pile._cards.Insert(0, card);
+            }
+
+            handDraw = Math.Max(handDraw, cardsInnate.Count);
+            handDraw = Math.Min(handDraw, CardPile.MaxCardsInHand);
+          }
+          await CardPileCmd.Draw(playerChoiceContext, handDraw, player, true);
+          combatCt = __instance.CombatCt;
+          combatCt.ThrowIfCancellationRequested();
+          await Hook.AfterPlayerTurnStart(state, playerChoiceContext, player);
+        }
+      }
+      
+      [HarmonyPrefix]
+      static bool Prefix(Player player, HookPlayerChoiceContext playerChoiceContext, CombatManager __instance, ref Task __result)
+      {
+        __result = Helper(player, playerChoiceContext, __instance);
+        return false;
+      }
+    }
+
+}
