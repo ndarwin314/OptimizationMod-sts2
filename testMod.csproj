@@ -64,6 +64,10 @@
         <None Include="testMod/**"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Include="steam_appid.txt" />
+    </ItemGroup>
+
     <Target Name="CheckDependencyPaths">
         <Error
                 Text=" Slay the Spire 2 data not found at path '$(Sts2DataDir)'"

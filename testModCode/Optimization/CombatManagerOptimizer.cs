@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using MegaCrit.Sts2.Core.Audio.Debug;
 
 
 namespace testMod.testModCode.Optimization;
@@ -70,20 +71,13 @@ public static class CombatManagerOptimizer
               return enchantment is { ShouldStartAtBottomOfDrawPile: true };
             }).ToList();
             
-            for (int i=0; i<cardsBottom.Count; i++)
-            {
-              var card = cardsBottom[i];
-              
-              pile._cards.RemoveAt(i);
-              pile._cards.Add(card);
-            }
+            foreach (CardModel card in cardsBottom)
+              pile.MoveToBottomInternal(card);
+            
             var cardsInnate = pile.Cards.Where(InnateHelper).Except(cardsBottom).ToList();
-            for (int i=0; i<cardsInnate.Count; i++)
-            {
-              var card = cardsInnate[i];
-              pile._cards.RemoveAt(i);
-              pile._cards.Insert(0, card);
-            }
+            
+            foreach (CardModel card in cardsInnate)
+              pile.MoveToTopInternal(card);
 
             handDraw = Math.Max(handDraw, cardsInnate.Count);
             handDraw = Math.Min(handDraw, CardPile.MaxCardsInHand);
@@ -102,5 +96,4 @@ public static class CombatManagerOptimizer
         return false;
       }
     }
-
 }

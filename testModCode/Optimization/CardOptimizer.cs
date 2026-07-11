@@ -4,13 +4,16 @@ using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Random;
 
 namespace testMod.testModCode.Optimization;
 
 public class CardOptimizer
 {
-    public static Dictionary<CardModel, CardPile?> CardPileMap = new (10000);
+    public static readonly Dictionary<CardModel, CardPile?> CardPileMap = new (512);
+    
 
+    
     [HarmonyPatch(typeof(CardModel), nameof(CardModel.Pile), MethodType.Getter)]
     class CardPileGetter
     {
@@ -19,7 +22,7 @@ public class CardOptimizer
         {
             var temp = CardPileMap.GetValueOrDefault(__instance);
             if (temp == null)
-                CardPileMap[__instance] = null;
+                return false;
             
             __result = temp;
             
@@ -51,8 +54,8 @@ public class CardOptimizer
     [HarmonyPatch(typeof(CombatState), nameof(CombatState.AddCard), [typeof(CardModel)])]
     static class AddCard
     {
-        [HarmonyPostfix]
-        static void Postfix(CardModel card)
+        [HarmonyPrefix]
+        static void Prefix(CardModel card)
         {
             CardPileMap[card] = null;
         }
@@ -66,7 +69,7 @@ public class CardOptimizer
         {
             CardPileMap.Remove(card);
         }
-    }
+    } 
 
     //[HarmonyPatch]
     static class ContainsPatch
@@ -82,8 +85,9 @@ public class CardOptimizer
             yield return AccessTools.Method(typeof(CardPile), nameof(CardPile.RemoveInternal));
             yield return AccessTools.Method(typeof(CardPile), nameof(CardPile.MoveToBottomInternal));
             yield return AccessTools.Method(typeof(CardPile), nameof(CardPile.MoveToTopInternal));
-        }
-        
+        } 
+    
+    
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions /*, ILGenerator generator*/)
         {
             // Without ILGenerator, the CodeMatcher will not be able to create labels
@@ -99,8 +103,24 @@ public class CardOptimizer
                 );
 
             return codeMatcher.Instructions();
+        } 
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.PopulateCombatState))]
+    public static class Test
+    {
+        [HarmonyPrefix]
+        public static bool PopulateCombatState(Rng rng, CombatState state, Player __instance)
+        {
+            foreach (CardModel mutableCard in __instance.Deck.Cards.ToList())
+            {
+                CardModel card = state.CloneCard(mutableCard);
+                card.DeckVersion = mutableCard;
+                __instance.PlayerCombatState.DrawPile.AddInternal(card);
+            }
+            __instance.PlayerCombatState.DrawPile.RandomizeOrderInternal(__instance, rng, state);
+            return false;
         }
     }
-    
     
 }
