@@ -57,7 +57,7 @@ public class CardOptimizer
         [HarmonyPostfix]
         static void Postfix(CardModel card, CardPile __instance)
         {
-            CardPileMap[card] = null;
+            CardPileMap.Remove(card);
         }
     }
 
@@ -144,6 +144,16 @@ public class CardOptimizer
         }
     }
 
+    [HarmonyPatch(typeof(RunManager), nameof(RunManager.CleanUp))]
+    static class Cleanup
+    {
+        [HarmonyPostfix]
+        static void Postfix()
+        {
+            CardPileMap.Clear();
+        }
+        
+    }
    
     
 }
