@@ -24,6 +24,12 @@ public static class CombatStateOptimizer
             { 
               Creature creature = i < combatState._allies.Count ? combatState._allies[i] : combatState._enemies[i - combatState._allies.Count];
               Player? player = creature.Player;
+              
+              foreach (var power in creature.Powers)
+              {
+                if (player==null || player.IsActiveForHooks)
+                  yield return power;
+              }
               if (player == null) {
                 if (creature.Monster != null)
                   yield return creature.Monster;
@@ -68,7 +74,7 @@ public static class CombatStateOptimizer
               yield return combatStateSubscriber;
         }
         
-        [HarmonyPrefix]
+        //[HarmonyPrefix]
         static bool Prefix()
         {
           return false;

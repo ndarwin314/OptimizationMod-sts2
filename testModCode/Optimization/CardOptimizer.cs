@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Reflection.Emit;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
@@ -80,7 +81,7 @@ public class CardOptimizer
         }
     } 
 
-    /*[HarmonyPatch]
+    [HarmonyPatch]
     static class ContainsPatch
     {
         static bool ContainsHandler(CardPile pile, CardModel card)
@@ -97,23 +98,34 @@ public class CardOptimizer
         } 
     
     
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions , ILGenerator generator)
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            // Without ILGenerator, the CodeMatcher will not be able to create labels
-            var codeMatcher = new CodeMatcher(instructions , ILGenerator generator);
+            var codeMatcher = new CodeMatcher(instructions);
+            MethodInfo getCards = AccessTools.PropertyGetter(typeof(CardPile), nameof(CardPile.Cards));
+            MethodInfo contains = typeof(Enumerable)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Single(m =>
+                    m.Name == nameof(Enumerable.Contains) &&
+                    m.GetParameters().Length == 2)
+                .MakeGenericMethod(typeof(CardModel));
+
+            MethodInfo replacement = AccessTools.Method(typeof(ContainsPatch), nameof(ContainsHandler));
 
             codeMatcher.MatchStartForward(
-                    CodeMatch.Calls(() => default(CardPile).Cards.Contains<CardModel>(default))
-                )
-                .ThrowIfInvalid("Could not find call to CardPile.Cards.Contains")
-                .RemoveInstruction()
-                .InsertAndAdvance(
-                    CodeInstruction.Call(() => ContainsHandler(default, default))
-                );
+                new CodeMatch(OpCodes.Call, getCards),
+                new CodeMatch(OpCodes.Ldarg_1),
+                new CodeMatch(OpCodes.Call, contains)
+                ).
+                ThrowIfNotMatch("noa you fucking suck").
+                RemoveInstructions(3).
+                Insert(
+                    new CodeInstruction(OpCodes.Ldarg_1),
+                    new CodeInstruction(OpCodes.Call, replacement)
+                    );
 
             return codeMatcher.Instructions();
         } 
-    }*/
+    }
 
     [HarmonyPatch(typeof(Player), nameof(Player.PopulateCombatState))]
     public static class Test
@@ -132,57 +144,6 @@ public class CardOptimizer
         }
     }
 
-    [HarmonyPatch(typeof(CardPileCmd), nameof(CardPileCmd.AddDuringManualCardPlay))]
-   static class CmdTest
-    {
-        
-        public static async Task Helper(CardModel card)
-        {
-            CardPile oldPile;
-            if (CombatManager.Instance.IsOverOrEnding)
-            {
-                oldPile = (CardPile) null;
-            }
-            else
-            {
-                ICombatState combatState1 = card.Owner.Creature.CombatState;
-                bool owningPlayerIsLocal = combatState1 != null && combatState1.ContainsCard(card) ? LocalContext.IsMe(card.Owner) : throw new InvalidOperationException(card.Id.Entry + " must be added to a CombatState before playing it.");
-                oldPile = card.Pile;
-                NCard cardNode = (NCard) null;
-                if (TestMode.IsOff)
-                    cardNode = NCard.FindOnTable(card) ?? CardPileCmd.CreateCardNodeAndUpdateVisuals(card, PileType.Play, owningPlayerIsLocal);
-                card.RemoveFromCurrentPile();
-                PileType.Play.GetPile(card.Owner).AddInternal(card);
-                if (cardNode != null)
-                {
-                    CardPileCmd.MoveCardNodeToNewPileBeforeTween(cardNode, PileType.Play);
-                    Tween tween = NCombatRoom.Instance.CreateTween().SetParallel();
-                    CardPileCmd.AppendPlayPileLerpTween(tween, cardNode, oldPile);
-                    cardNode.PlayPileTween = tween;
-                    tween.Play();
-                    if (card.Type == CardType.Power)
-                    {
-                        if (!await tween.AwaitFinished((Godot.Node) NCombatRoom.Instance))
-                        {
-                            oldPile = (CardPile) null;
-                            return;
-                        }
-                    }
-                }
-                IRunState runState = card.Owner.RunState;
-                ICombatState combatState2 = card.CombatState;
-                CardModel card1 = card;
-                CardPile cardPile = oldPile;
-                int type = cardPile != null ? (int) cardPile.Type : 0;
-                await Hook.AfterCardChangedPiles(runState, combatState2, card1, (PileType) type, (AbstractModel) null);
-                oldPile = (CardPile) null;
-            }
-        }
-        [HarmonyPrefix]
-        static bool Prefix(CardModel card, ref Task __result)
-        {
-            __result = Helper(card);
-            return false;
-        }
-    }
+   
+    
 }
