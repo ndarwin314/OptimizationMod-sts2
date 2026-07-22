@@ -38,9 +38,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Alchyr.Sts2.BaseLib" Version="*" PrivateAssets="All"/>
+        <!-- <PackageReference Include="Alchyr.Sts2.BaseLib" Version="*" PrivateAssets="All"/> -->
         <PackageReference Include="Krafs.Publicizer" Version="2.3.0" PrivateAssets="All"/>
-        <PackageReference Include="Alchyr.Sts2.ModAnalyzers" Version="*"/>
+        <!-- <PackageReference Include="Alchyr.Sts2.ModAnalyzers" Version="*"/> -->
         <!-- Generates a .pck file when building if only using simple assets. May not work on all setups. Uncomment to test. -->
         <!-- <PackageReference Include="BSchneppe.StS2.PckPacker" Version="0.1.1" PrivateAssets="All" /> -->
         <AdditionalFiles Include="testMod/localization/**/*.json"/> <!-- Used by analyzer -->
@@ -80,7 +80,7 @@
             <ManifestPath>$(MSBuildProjectName).json</ManifestPath>
         </PropertyGroup>
 
-        <PropertyGroup>
+        <!--<PropertyGroup>
             <NuGetData>$([System.IO.File]::ReadAllText(".godot/mono/temp/obj/project.assets.json"))</NuGetData>
             <ActiveBaseLibVersion>$([System.Text.RegularExpressions.Regex]::Match($(NuGetData), '"Alchyr.Sts2.BaseLib\/([^"]*)').Result('$1'))</ActiveBaseLibVersion>
             <OldContent>$([System.IO.File]::ReadAllText($(ManifestPath)))</OldContent>
@@ -96,7 +96,7 @@
 
         <Message Condition="'$(OldContent)' != '$(NewContent)'"
                  Text="Updated BaseLib dependency version in mod manifest json to version $(BaseLibVersion)"
-                 Importance="high"/>
+                 Importance="high"/> -->
     </Target>
 
     <Target Name="CopyToModsFolderOnBuild" AfterTargets="PostBuildEvent">
