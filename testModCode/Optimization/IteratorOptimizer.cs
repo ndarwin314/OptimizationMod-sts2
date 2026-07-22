@@ -5,14 +5,67 @@ using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Runs;
 
 
 namespace testMod.testModCode.Optimization;
 
 [HarmonyPatch]
-public static class CombatStateOptimizer
+public static class IteratorOptimizer
 { 
-  public static IEnumerable<AbstractModel> Helper(CombatState __instance, bool skipCard)
+  
+  public static IEnumerable<AbstractModel> RunStateHelper(ICombatState? childCombatState, RunState runState, bool skipCard)
+  {
+    foreach (var player in runState.Players)
+    {
+      if (!player.IsActiveForHooks) continue;
+
+      if (skipCard) continue;
+      foreach (var card in player.Deck.Cards)
+      {
+        if (!card.HasBeenRemovedFromState)
+          yield return card;
+        if (card.Enchantment != null)
+          yield return card.Enchantment;
+      }
+    }
+    
+    if (childCombatState == null)
+    {
+      foreach (var player in runState.Players)
+      {
+        if (!player.IsActiveForHooks) continue;
+        
+        foreach (var relicModel in player.Relics)
+        {
+          if (relicModel is { IsMelted: false, HasBeenRemovedFromState: false } )
+            yield return relicModel;
+        }
+        
+        foreach (var potionModel in player.PotionSlots)
+        {
+          if (potionModel is { HasBeenRemovedFromState: false })
+            yield return potionModel;
+        }
+      }
+
+      foreach (var modifier in runState.Modifiers)
+        yield return modifier;
+      
+      foreach (var badgeModel in runState.BadgeModels)
+        yield return badgeModel;
+
+      yield return runState.MultiplayerScalingModel;
+    }
+
+    foreach (var runStateSubscriber in ModHelper.IterateAllRunStateSubscribers(runState))
+      yield return runStateSubscriber;
+    
+    if (childCombatState == null) yield break;
+    foreach (var iterateHookListener in childCombatState.IterateHookListeners())
+      yield return iterateHookListener;
+  }
+  public static IEnumerable<AbstractModel> CombatStateHelper(CombatState __instance, bool skipCard)
   { 
       var combatState = __instance;
       for (int i = 0; i < combatState._allies.Count + combatState._enemies.Count; i++)
@@ -74,12 +127,12 @@ public static class CombatStateOptimizer
   }
 
     [HarmonyPatch(typeof(CombatState), nameof(CombatState.IterateHookListeners))]
-    class Iterate
+    class IterateCombat
     {
         [HarmonyPostfix]
         static IEnumerable<AbstractModel> Postfix(IEnumerable<AbstractModel> hack, CombatState __instance)
         {
-          return Helper(__instance, false);
+          return CombatStateHelper(__instance, true);
         }
         
         [HarmonyPrefix]
@@ -90,6 +143,24 @@ public static class CombatStateOptimizer
         
     }
     
-  
+    [HarmonyPatch(typeof(RunState), nameof(RunState.IterateHookListeners))]
+    class IterateRun
+    {
+      [HarmonyPostfix]
+      static IEnumerable<AbstractModel> Postfix(
+        IEnumerable<AbstractModel> hack, 
+        ICombatState? childCombatState,
+        RunState __instance)
+      {
+        return RunStateHelper(childCombatState, __instance, true);
+      }
+        
+      [HarmonyPrefix]
+      static bool Prefix()
+      {
+        return false;
+      }
+        
+    }
     
 }
