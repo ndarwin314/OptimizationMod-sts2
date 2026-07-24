@@ -71,7 +71,50 @@ public class CardOptimizer
         {
             CardPileMap.Remove(card);
         }
-    } 
+    }
+
+    [HarmonyPatch(typeof(RunState), nameof(RunState.ContainsCard))]
+    static class RunStateContains
+    {
+        [HarmonyPrefix]
+        static bool Prefix(CardModel card, ref bool __result)
+        {
+            __result = CardPileMap.ContainsKey(card);
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(RunState), nameof(RunState.AddCard), [typeof(CardModel)])]
+    static class AddCardRun
+    {
+        [HarmonyPrefix]
+        static bool Prefix(CardModel card, RunState __instance)
+        {
+            card.AssertMutable();
+            if (card.HasBeenRemovedFromState)
+            {
+                if (!__instance.ContainsCard(card))
+                    throw new InvalidOperationException($"Tried to add card {card} to RunState that has HasBeenRemovedFromState set as true, but it does not belong to this state!");
+                card.HasBeenRemovedFromState = false;
+            }
+            else
+                CardPileMap[card] = null;
+
+            return false;
+        }
+    }
+    
+    [HarmonyPatch(typeof(RunState), nameof(RunState.RemoveCard))]
+    static class RemoveCardRun
+    {
+        [HarmonyPrefix]
+        static bool Prefix(CardModel card)
+        {
+            CardPileMap.Remove(card);
+            card.Owner = null!;
+            return false;
+        }
+    }
 
     [HarmonyPatch]
     static class ContainsPatch
