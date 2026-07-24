@@ -430,7 +430,7 @@ public class CloneOptimizer
                 tween.Chain().TweenCallback(Callable.From((Action) (() =>
                 {
                   NCombatRoom instance = NCombatRoom.Instance;
-                  NCardExhaustVfx child = instance != null ? NCardExhaustVfx.Create(cardNode) : (NCardExhaustVfx) null;
+                  NCardExhaustVfx child = instance != null ? NCardExhaustVfx.Create(cardNode) : null;
                   if (child != null)
                   {
                     instance.Ui.AddChildSafely((Node) child);

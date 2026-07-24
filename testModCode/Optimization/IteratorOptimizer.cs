@@ -10,11 +10,19 @@ using MegaCrit.Sts2.Core.Runs;
 
 namespace testMod.testModCode.Optimization;
 
+
+// At a high level, both of these patches are doing the same 3 things. The first two should have no behavior impact
+// the last does change behavior of the method but as far as I have seen it doesn't break any function using them
+// 1. Avoiding constructing an additional List in memory, and simply yielding elements in order
+// 2. Moving a .Contains check into the method body, allowing us to skip a switch statement over different model types
+// 3. Optional skipping over CardModels since they don't seem to be used for any hooks and it is a considerable speedup
+//
+// In the future I might try to combine some of the logic of these two methods since there seems to be considerable
+// overlap in what they do
 [HarmonyPatch]
 public static class IteratorOptimizer
-{ 
-  
-  public static IEnumerable<AbstractModel> RunStateHelper(ICombatState? childCombatState, RunState runState, bool skipCard)
+{
+  private static IEnumerable<AbstractModel> RunStateHelper(ICombatState? childCombatState, RunState runState, bool skipCard)
   {
     foreach (var player in runState.Players)
     {

@@ -4,18 +4,22 @@ using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Runs;
 
 namespace testMod.testModCode.Optimization;
 
+// Variety of changes to cards to try and improve performance. Primarily centered around creating a dictionary to track
+// card locations rather than doing slow List.Contains calls
 public class CardOptimizer
 {
-    public static readonly Dictionary<CardModel, CardPile?> CardPileMap = new (512);
+    // Dictionary to track all cards currently in a Pile
+    private static readonly Dictionary<CardModel, CardPile?> CardPileMap = new (512);
     
 
-    
+    // Defaults to getting the value in the dictionary but uses the base method as a fallback since it seemed to fix some bugs
     [HarmonyPatch(typeof(CardModel), nameof(CardModel.Pile), MethodType.Getter)]
     class CardPileGetter
     {
@@ -32,7 +36,7 @@ public class CardOptimizer
         }
     }
     
-    
+    // Postfix to AddInternal that updates CardPileMap
     [HarmonyPatch(typeof(CardPile), nameof(CardPile.AddInternal))]
     static class AddInternal
     {
@@ -43,6 +47,7 @@ public class CardOptimizer
         }
     }
     
+    // Postfix to RemoveInternal that updates CardPileMap
     [HarmonyPatch(typeof(CardPile), nameof(CardPile.RemoveInternal))]
     static class RemoveInternal
     {
@@ -52,7 +57,8 @@ public class CardOptimizer
             CardPileMap.Remove(card);
         }
     }
-
+    
+    // Postfix to AddCard that updates CardPileMap
     [HarmonyPatch(typeof(CombatState), nameof(CombatState.AddCard), [typeof(CardModel)])]
     static class AddCard
     {
@@ -63,6 +69,7 @@ public class CardOptimizer
         }
     }
     
+    // Postfix to RemoveCard that updates CardPileMap
     [HarmonyPatch(typeof(CombatState), nameof(CombatState.RemoveCard), [typeof(CardModel)])]
     static class RemoveCard
     {
@@ -73,6 +80,7 @@ public class CardOptimizer
         }
     }
 
+    // Uses Dictionary lookup instead of List Lookup in each pile
     [HarmonyPatch(typeof(RunState), nameof(RunState.ContainsCard))]
     static class RunStateContains
     {
@@ -84,6 +92,8 @@ public class CardOptimizer
         }
     }
 
+    
+    // Postfix to AddCard that updates CardPileMap
     [HarmonyPatch(typeof(RunState), nameof(RunState.AddCard), [typeof(CardModel)])]
     static class AddCardRun
     {
@@ -104,6 +114,7 @@ public class CardOptimizer
         }
     }
     
+    // Postfix to RemoveCard that updates CardPileMap
     [HarmonyPatch(typeof(RunState), nameof(RunState.RemoveCard))]
     static class RemoveCardRun
     {
@@ -119,13 +130,15 @@ public class CardOptimizer
     [HarmonyPatch]
     static class ContainsPatch
     {
-        static bool ContainsHandler(CardPile pile, CardModel card)
+        private static bool ContainsHandler(CardPile pile, CardModel card)
         {
             return CardPileMap.GetValueOrDefault(card) == pile;
         }
         
         static IEnumerable<MethodBase> TargetMethods()
         {
+            // Methods that use slow self.Cards.Contains to check if the contain a card before adding ore removing
+            // replaces this with my faster contains
             yield return AccessTools.Method(typeof(CardPile), nameof(CardPile.AddInternal));
             yield return AccessTools.Method(typeof(CardPile), nameof(CardPile.RemoveInternal));
             yield return AccessTools.Method(typeof(CardPile), nameof(CardPile.MoveToBottomInternal));
@@ -151,7 +164,7 @@ public class CardOptimizer
                 new CodeMatch(OpCodes.Ldarg_1),
                 new CodeMatch(OpCodes.Call, contains)
                 ).
-                ThrowIfNotMatch("noa you fucking suck").
+                ThrowIfNotMatch("Failed to find match for self.Cards.Contains").
                 RemoveInstructions(3).
                 Insert(
                     new CodeInstruction(OpCodes.Ldarg_1),
@@ -179,6 +192,8 @@ public class CardOptimizer
         }
     }
 
+    
+    // Clears CardPileMap upon exiting run to main menu to avoid memory leaks
     [HarmonyPatch(typeof(RunManager), nameof(RunManager.CleanUp))]
     static class Cleanup
     {
