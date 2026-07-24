@@ -33,26 +33,34 @@ namespace testMod.testModCode.Optimization;
 public class CloneOptimizer
 {
 
+  // Counter of how many cards we have rendered on CloneRestSiteOption, should be reset at end of call
   private static int _visualCounter = 0;
-  private const int CloneVisualLimit = 15;
+  // Limit for how many cards to render during Clone
+  private const int CloneVisualLimit = 25;
   
     [HarmonyPatch(typeof(CloneRestSiteOption), nameof(CloneRestSiteOption.OnSelect))]
     public class OnSelect
     {
-
+        // LINQ sometimes doesn't like if i replace this with a lambda
         private static bool Filter(CardModel card) => card.Enchantment is Clone;
         
         
         private static async Task<bool> Helper(CloneRestSiteOption option)
         {
+          // Use LINQ to apply CloneCard to all cards at once, rather than a foreach loop
+          // Could potentially use parallel version but it seems fine as is
             var clonedCards = 
                 option.Owner.Deck.Cards.
                     Where(Filter).
                     Select(option.Owner.RunState.CloneCard).ToList();
 
             var deck = option.Owner.Deck;
+            // use modified version of Add method for List<CardModel> to avoid multiple calls
             var results = await CloneAdd(clonedCards, deck);
+            // It seems like the cards don't get rendered without a clal to this, I don't fully understand
+            // how the animations work so idk
             CardCmd.PreviewCardPileAdd(results.Take(CloneVisualLimit).ToList(), style: CardPreviewStyle.MessyLayout);
+            // reset counter
             _visualCounter = 0;
             return true;
         }
@@ -68,6 +76,8 @@ public class CloneOptimizer
     [HarmonyPatch(typeof(Hoarder), nameof(Hoarder.AfterCardChangedPiles))]
     public class HoarderFix
     {
+      
+      // Uses the static field to determine whether to render card moving piles
       private static async Task Helper(
         CardModel card,
         PileType oldPileType,
@@ -108,6 +118,7 @@ public class CloneOptimizer
     [HarmonyPatch(typeof(BingBong), nameof(BingBong.AfterCardChangedPiles))]
     public class BingBongFix
     {
+      // Uses the static field to determine whether to render card moving piles
       private static async Task Helper(
         CardModel card,
         PileType oldPileType,
@@ -142,6 +153,7 @@ public class CloneOptimizer
       }
     }
     
+    // Modified version of Add function that should only render first CloneVisualLimit cards
     public static async Task<IReadOnlyList<CardPileAddResult>> CloneAdd(
     IEnumerable<CardModel> cards,
     CardPile newPile,

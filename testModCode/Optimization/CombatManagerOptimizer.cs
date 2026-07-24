@@ -22,6 +22,7 @@ public static class CombatManagerOptimizer
         return card.LocalKeywords.Contains(CardKeyword.Innate);
       }
       
+      // I remember I made some optimizations here but i cant remember what
       private static async Task Helper(Player player, HookPlayerChoiceContext playerChoiceContext, CombatManager __instance)
       {
         if (__instance._state == null || player.PlayerCombatState == null)
