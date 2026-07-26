@@ -26,6 +26,10 @@
             <HintPath>$(Sts2DataDir)/sts2.dll</HintPath>
             <Private>false</Private>
         </Reference>
+        <Reference Include="Steamworks.NET">
+            <HintPath>$(Sts2DataDir)/Steamworks.NET.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
     </ItemGroup>
 
     <ItemGroup Condition="True"> <!--Allows access to originally private/protected members but may (unlikely to) cause errors.-->

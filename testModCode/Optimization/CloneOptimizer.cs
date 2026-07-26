@@ -11,6 +11,7 @@ using MegaCrit.Sts2.Core.Entities.RestSite;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Enchantments;
 using MegaCrit.Sts2.Core.Models.Modifiers;
@@ -27,6 +28,7 @@ using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Settings;
 using MegaCrit.Sts2.Core.TestSupport;
+using Timer = Godot.Timer;
 
 namespace testMod.testModCode.Optimization;
 
@@ -36,8 +38,40 @@ public class CloneOptimizer
   // Counter of how many cards we have rendered on CloneRestSiteOption, should be reset at end of call
   private static int _visualCounter = 0;
   // Limit for how many cards to render during Clone
-  private const int CloneVisualLimit = 25;
-  
+  private const int CloneVisualLimit = 15;
+
+  private static void PreviewHelper(
+    IReadOnlyList<CardPileAddResult> results,
+    float time = 1.2f)
+  {
+    const PileType pileType = PileType.Deck;
+    Control control = NRun.Instance.GlobalUi.MessyCardPreviewContainer;
+    var tween = control.CreateTween().SetParallel();
+    foreach (var result in results)
+    {
+      var card = result.cardAdded;
+      var modifyingModels = result.modifyingModels!;
+      var relicsToFlash = (modifyingModels?.OfType<RelicModel>() ?? null)!;
+      var node = NCard.Create(card)!;
+      control.AddChildSafely(node);
+      node.UpdateVisuals(pileType, CardPreviewMode.Normal);
+      var source = new TaskCompletionSource();
+      tween.TweenProperty(
+        node, 
+        (NodePath) "scale", 
+        Vector2.One, 0.25)
+        .From(Vector2.Zero).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
+      tween.TweenCallback(
+        Callable.From((Action) (() => TaskHelper.RunSafely(CardCmd.FlashRelics(node, relicsToFlash)))));
+      tween.TweenCallback(Callable.From((Action) (() =>
+      {
+        NCardFlyVfx child= NCardFlyVfx.Create(node, card.Pile?.Type ?? pileType, true, card.Owner.Character.TrailPath)!;
+        Node parent2 = NRun.Instance?.GlobalUi.TopBar.TrailContainer!;
+        parent2.AddChildSafely(child);
+        TaskHelper.RunSafely(child.SwooshAwayCompletion?.Task.ContinueWith(_ => source.SetResult())!);
+      }))).SetDelay(time);
+    }
+  }
     [HarmonyPatch(typeof(CloneRestSiteOption), nameof(CloneRestSiteOption.OnSelect))]
     public class OnSelect
     {
@@ -57,9 +91,10 @@ public class CloneOptimizer
             var deck = option.Owner.Deck;
             // use modified version of Add method for List<CardModel> to avoid multiple calls
             var results = await CloneAdd(clonedCards, deck);
-            // It seems like the cards don't get rendered without a clal to this, I don't fully understand
+            // It seems like the cards don't get rendered without a call to this, I don't fully understand
             // how the animations work so idk
-            CardCmd.PreviewCardPileAdd(results.Take(CloneVisualLimit).ToList(), style: CardPreviewStyle.MessyLayout);
+            //CardCmd.PreviewCardPileAdd(results.Take(CloneVisualLimit).ToList(), style: CardPreviewStyle.MessyLayout);
+            PreviewHelper(results.Take(CloneVisualLimit).ToList());
             // reset counter
             _visualCounter = 0;
             return true;
@@ -69,6 +104,7 @@ public class CloneOptimizer
         public static bool Prefix(CloneRestSiteOption __instance, ref Task<bool> __result)
         {
             __result = Helper(__instance);
+            Thread.Sleep(500);
             return false;
         }
     }
@@ -94,11 +130,9 @@ public class CloneOptimizer
         {
           CardModel card1 = card.Owner.RunState.CloneCard(card);
           clonedBy1._cardsToSkip.Add(card1);
-          var result = await CardPileCmd.Add(card1, PileType.Deck, clonedBy: clonedBy1);
-          if (_visualCounter >= CloneVisualLimit) continue;
-          
-          CardCmd.PreviewCardPileAdd(result);
+          var skipVisuals = _visualCounter >= CloneVisualLimit;
           _visualCounter++;
+          await CardPileCmd.Add(card1, PileType.Deck, clonedBy: clonedBy1, skipVisuals: skipVisuals);
         }
       }
       
@@ -132,12 +166,9 @@ public class CloneOptimizer
         clonedBy1.Flash();
         CardModel card1 = clonedBy1.Owner.RunState.CloneCard(card);
         clonedBy1.CardsToSkip.Add(card1);
-        var result = await CardPileCmd.Add(card1, PileType.Deck, clonedBy: clonedBy1);
-        if (_visualCounter < CloneVisualLimit)
-        {
-          CardCmd.PreviewCardPileAdd(result);
-          _visualCounter++;
-        }
+        var skipVisuals = _visualCounter >= CloneVisualLimit;
+        _visualCounter++;
+        await CardPileCmd.Add(card1, PileType.Deck, clonedBy: clonedBy1, skipVisuals: skipVisuals);
       }
 
       [HarmonyPrefix]
