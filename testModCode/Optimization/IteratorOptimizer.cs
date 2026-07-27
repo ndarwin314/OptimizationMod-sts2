@@ -40,17 +40,17 @@ public static class IteratorOptimizer
     
     if (childCombatState == null)
     {
-      foreach (var player in runState.Players)
+      foreach (var player in runState.Players.ToList())
       {
         if (!player.IsActiveForHooks) continue;
         
-        foreach (var relicModel in player.Relics)
+        foreach (var relicModel in player.Relics.ToList())
         {
           if (relicModel is { IsMelted: false, HasBeenRemovedFromState: false } )
             yield return relicModel;
         }
         
-        foreach (var potionModel in player.PotionSlots)
+        foreach (var potionModel in player.PotionSlots.ToList())
         {
           if (potionModel is { HasBeenRemovedFromState: false })
             yield return potionModel;
@@ -84,10 +84,10 @@ public static class IteratorOptimizer
             combatState._enemies[i - combatState._allies.Count];
         Player? player = creature.Player;
         
-        foreach (var power in creature.Powers)
+        // powers can remove themselves which will throw an enumerator error, so we need to use ToList
+        foreach (var power in creature.Powers.ToList().Where(power => player==null || player.IsActiveForHooks))
         {
-          if (player==null || player.IsActiveForHooks)
-            yield return power;
+          yield return power;
         }
         if (player == null) {
           if (creature.Monster != null)
@@ -95,13 +95,13 @@ public static class IteratorOptimizer
         }
         else if (player.IsActiveForHooks)
         {
-          foreach (var relicModel in player.Relics)
+          foreach (var relicModel in player.Relics.ToList())
           {
             if (relicModel is { IsMelted: false, HasBeenRemovedFromState: false } )
               yield return relicModel;
           }
           
-          foreach (var potionModel in player.PotionSlots)
+          foreach (var potionModel in player.PotionSlots.ToList())
           {
             if (potionModel is { HasBeenRemovedFromState: false })
               yield return potionModel;
@@ -109,7 +109,7 @@ public static class IteratorOptimizer
 
           if (player.PlayerCombatState == null) continue;
 
-          foreach (var orb in player.PlayerCombatState.OrbQueue.Orbs)
+          foreach (var orb in player.PlayerCombatState.OrbQueue.Orbs.ToList())
           {
             if (orb is { HasBeenRemovedFromState: false })
               yield return orb;

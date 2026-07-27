@@ -108,6 +108,7 @@ public class CloneOptimizer
             // how the animations work so idk
             //CardCmd.PreviewCardPileAdd(results.Take(CloneVisualLimit).ToList(), style: CardPreviewStyle.MessyLayout);
             PreviewHelper(results.Take(CloneVisualLimit).ToList());
+            Thread.Sleep(1200);
             // reset counter
             _visualCounter = 0;
             return true;
@@ -557,14 +558,11 @@ public class CloneOptimizer
     foreach (CardPileAddResult cardPileAddResult in results)
     {
       if (!cardPileAddResult.success) continue;
-      CardModel cardAdded = cardPileAddResult.cardAdded;
-      IRunState runState = cardAdded.Owner.RunState;
-      ICombatState combatState = cardAdded.CombatState;
-      CardModel card = cardAdded;
-      CardPile oldPile = cardPileAddResult.oldPile;
-      int type = oldPile != null ? (int) oldPile.Type : 0;
-      AbstractModel clonedBy1 = clonedBy;
-      await Hook.AfterCardChangedPiles(runState, combatState, card, (PileType) type, clonedBy1);
+      CardModel card= cardPileAddResult.cardAdded;
+      IRunState runState = card.Owner.RunState;
+      ICombatState combatState = card.CombatState;
+      int type = cardPileAddResult.oldPile != null ? (int) cardPileAddResult.oldPile.Type : 0;
+      await Hook.AfterCardChangedPiles(runState, combatState, card, (PileType) type, clonedBy);
     }
     // batch extra card adds together by clonedBy target to save on calling Add a lot of times
     foreach (var (key, value) in ClonedByLookup)
