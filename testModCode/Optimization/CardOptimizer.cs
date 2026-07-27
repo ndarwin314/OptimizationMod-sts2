@@ -19,7 +19,6 @@ public class CardOptimizer
     private static readonly Dictionary<CardModel, CardPile?> CardPileMap = new (512);
     
 
-    // Defaults to getting the value in the dictionary but uses the base method as a fallback since it seemed to fix some bugs
     [HarmonyPatch(typeof(CardModel), nameof(CardModel.Pile), MethodType.Getter)]
     class CardPileGetter
     {
@@ -27,8 +26,6 @@ public class CardOptimizer
         static bool Prefix(CardModel __instance, ref CardPile? __result)
         {
             var temp = CardPileMap.GetValueOrDefault(__instance);
-            if (temp == null)
-                return true;
             
             __result = temp;
             

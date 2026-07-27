@@ -13,7 +13,7 @@ namespace testMod.testModCode.Optimization;
 public class SteamApiRateLimiter
 {
     private static DateTime _lastCheckTime;
-    private const int DelayMilliseconds = 5000;
+    private const int DelayMilliseconds = 1000;
 
     private static bool Helper()
     {

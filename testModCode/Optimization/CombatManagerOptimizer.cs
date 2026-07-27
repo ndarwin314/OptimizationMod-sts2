@@ -83,4 +83,21 @@ public static class CombatManagerOptimizer
         return false;
       }
     }
+  
+  [HarmonyPatch(typeof(PlayerCombatState), nameof(PlayerCombatState.AfterCombatEnd))]
+  public class Clear
+  {
+    [HarmonyPrefix]
+    public static bool Prefix(PlayerCombatState __instance)
+    {
+      CombatManager.Instance.StateTracker.Unsubscribe(__instance);
+      foreach (var allPile in __instance.AllPiles)
+      {
+        allPile.Clear(true);
+        CombatManager.Instance.StateTracker.Unsubscribe(allPile);
+      }
+      __instance._pets.Clear();
+      return false;
+    }
+  }
 }

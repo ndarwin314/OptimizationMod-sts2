@@ -40,6 +40,19 @@ public class CloneOptimizer
   // Limit for how many cards to render during Clone
   private const int CloneVisualLimit = 15;
 
+  private static readonly Dictionary<AbstractModel, List<CardModel>> ClonedByLookup = new ();
+
+  private static List<CardModel> GetOrCreateDefault(AbstractModel model)
+  {
+    if (!ClonedByLookup.TryGetValue(model, out var list))
+    {
+      list = new List<CardModel>();
+      ClonedByLookup[model] = list;
+    }
+
+    return list;
+  }
+
   private static void PreviewHelper(
     IReadOnlyList<CardPileAddResult> results,
     float time = 1.2f)
@@ -104,7 +117,6 @@ public class CloneOptimizer
         public static bool Prefix(CloneRestSiteOption __instance, ref Task<bool> __result)
         {
             __result = Helper(__instance);
-            Thread.Sleep(500);
             return false;
         }
     }
@@ -120,19 +132,19 @@ public class CloneOptimizer
         AbstractModel? clonedBy,
         Hoarder hoarder)
       {
-        Hoarder clonedBy1 = hoarder;
         if (oldPileType != PileType.None)
           return;
         CardPile pile = card.Pile;
-        if ((pile != null ? (pile.Type != PileType.Deck ? 1 : 0) : 1) != 0 || clonedBy != null || clonedBy1._cardsToSkip.Remove(card))
+        if ((pile != null ? pile.Type != PileType.Deck ? 1 : 0 : 1) != 0 || clonedBy != null || hoarder._cardsToSkip.Remove(card))
           return;
         for (int i = 0; i < 2; ++i)
         {
-          CardModel card1 = card.Owner.RunState.CloneCard(card);
-          clonedBy1._cardsToSkip.Add(card1);
-          var skipVisuals = _visualCounter >= CloneVisualLimit;
-          _visualCounter++;
-          await CardPileCmd.Add(card1, PileType.Deck, clonedBy: clonedBy1, skipVisuals: skipVisuals);
+          CardModel clone = card.Owner.RunState.CloneCard(card);
+          GetOrCreateDefault(hoarder).Add(clone);
+          hoarder._cardsToSkip.Add(clone);
+          //var skipVisuals = _visualCounter >= CloneVisualLimit;
+          //_visualCounter++;
+          //await CardPileCmd.Add(clone, PileType.Deck, clonedBy: hoarder, skipVisuals: skipVisuals);
         }
       }
       
@@ -159,16 +171,16 @@ public class CloneOptimizer
         AbstractModel? clonedBy,
         BingBong bingBong)
       {
-        BingBong clonedBy1 = bingBong;
         CardPile pile = card.Pile;
-        if ((pile != null ? pile.Type != PileType.Deck ? 1 : 0 : 1) != 0 || card.Owner != clonedBy1.Owner || clonedBy != null || clonedBy1.CardsToSkip.Remove(card))
+        if ((pile != null ? pile.Type != PileType.Deck ? 1 : 0 : 1) != 0 || card.Owner != bingBong.Owner || clonedBy != null || bingBong.CardsToSkip.Remove(card))
           return;
-        clonedBy1.Flash();
-        CardModel card1 = clonedBy1.Owner.RunState.CloneCard(card);
-        clonedBy1.CardsToSkip.Add(card1);
-        var skipVisuals = _visualCounter >= CloneVisualLimit;
-        _visualCounter++;
-        await CardPileCmd.Add(card1, PileType.Deck, clonedBy: clonedBy1, skipVisuals: skipVisuals);
+        bingBong.Flash();
+        CardModel clone = bingBong.Owner.RunState.CloneCard(card);
+        GetOrCreateDefault(bingBong).Add(clone);
+        bingBong.CardsToSkip.Add(clone);
+        //var skipVisuals = _visualCounter >= CloneVisualLimit;
+        //_visualCounter++;
+        //await CardPileCmd.Add(clone, PileType.Deck, clonedBy: bingBong, skipVisuals: skipVisuals);
       }
 
       [HarmonyPrefix]
@@ -554,6 +566,12 @@ public class CloneOptimizer
       AbstractModel clonedBy1 = clonedBy;
       await Hook.AfterCardChangedPiles(runState, combatState, card, (PileType) type, clonedBy1);
     }
+    // batch extra card adds together by clonedBy target to save on calling Add a lot of times
+    foreach (var (key, value) in ClonedByLookup)
+    {
+      await CardPileCmd.Add(value, PileType.Deck, clonedBy: key, skipVisuals: true);
+    }
+    ClonedByLookup.Clear();
     return results;
   }
 
