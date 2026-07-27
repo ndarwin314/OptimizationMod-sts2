@@ -70,6 +70,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Content Include="LICENSE.txt" />
       <Content Include="steam_appid.txt" />
     </ItemGroup>
 
