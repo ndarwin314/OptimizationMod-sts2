@@ -62,7 +62,7 @@ public class CardOptimizer
         [HarmonyPrefix]
         static void Prefix(CardModel card)
         {
-            CardPileMap[card] = null;
+            CardPileMap.TryAdd(card, null);
         }
     }
     
@@ -105,7 +105,10 @@ public class CardOptimizer
                 card.HasBeenRemovedFromState = false;
             }
             else
-                CardPileMap[card] = null;
+            {
+                // prevents from overwriting value with null
+                CardPileMap.TryAdd(card, null);
+            }
 
             return false;
         }

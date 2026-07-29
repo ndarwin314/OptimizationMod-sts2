@@ -22,6 +22,18 @@ namespace testMod.testModCode.Optimization;
 [HarmonyPatch]
 public static class IteratorOptimizer
 {
+
+  public static readonly Dictionary<Player, List<CardModel>> CardModelsHack = new();
+  public static readonly List<CardModel> CardModels = new();
+
+  public static List<CardModel> GetPlayerCards(Player player)
+  {
+    if (CardModelsHack.TryGetValue(player, out var list)) return list;
+    list = [];
+    CardModelsHack[player] = list;
+    return list;
+  }
+  
   private static IEnumerable<AbstractModel> RunStateHelper(ICombatState? childCombatState, RunState runState, bool skipCard)
   {
     foreach (var player in runState.Players)
@@ -30,6 +42,19 @@ public static class IteratorOptimizer
 
       if (skipCard) continue;
       foreach (var card in player.Deck.Cards)
+      {
+        if (!card.HasBeenRemovedFromState)
+          yield return card;
+        if (card.Enchantment != null)
+          yield return card.Enchantment;
+      }
+    }
+
+    // hacky workaround, originally i was using the similarly named CardModelHack
+    // however this requires more work to behave as intended, on clone the owner of a card is null
+    if (skipCard)
+    {
+      foreach (var card in CardModels)
       {
         if (!card.HasBeenRemovedFromState)
           yield return card;

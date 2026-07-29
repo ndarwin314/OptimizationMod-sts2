@@ -100,4 +100,5 @@ public static class CombatManagerOptimizer
       return false;
     }
   }
+  
 }

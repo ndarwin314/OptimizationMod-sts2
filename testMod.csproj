@@ -35,10 +35,19 @@
     <ItemGroup Condition="True"> <!--Allows access to originally private/protected members but may (unlikely to) cause errors.-->
         <Publicize Include="sts2" IncludeVirtualMembers="false" IncludeCompilerGeneratedMembers="false"/>
     </ItemGroup>
+    
+
+    <PropertyGroup>
+        <PublicizerClearCacheOnClean>true</PublicizerClearCacheOnClean>
+    </PropertyGroup>
 
     <ItemGroup>
         <Publicize Include="sts2:MegaCrit.Sts2.Core.Combat.CombatManager"/>
         <Publicize Include="sts2:MegaCrit.Sts2.Core.Entities.Cards.CardPile"/>
+        <Publicize Include="sts2:MegaCrit.Sts2.Core.Models.Events.SelfHelpBook.GenerateInitialOptions"/>
+        <Publicize Include="sts2:MegaCrit.Sts2.Core.Models.Cards.Dowsing.AfterCloned"/>
+        <Publicize Include="sts2:MegaCrit.Sts2.Core.Models.Cards.Guilty.AfterCloned"/>
+        <Publicize Include="sts2:MegaCrit.Sts2.Core.Models.AbstractModel.AfterCloned"/>
     </ItemGroup>
 
     <ItemGroup>

@@ -44,11 +44,9 @@ public class CloneOptimizer
 
   private static List<CardModel> GetOrCreateDefault(AbstractModel model)
   {
-    if (!ClonedByLookup.TryGetValue(model, out var list))
-    {
-      list = new List<CardModel>();
-      ClonedByLookup[model] = list;
-    }
+    if (ClonedByLookup.TryGetValue(model, out var list)) return list;
+    list = [];
+    ClonedByLookup[model] = list;
 
     return list;
   }
