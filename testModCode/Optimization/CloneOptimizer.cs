@@ -365,7 +365,7 @@ public class CloneOptimizer
         if (flag4)
           cardsWithoutNodesChangingPiles.Add(card);
         else if (flag1)
-          cardNode = CardPileCmd.CreateCardNodeAndUpdateVisuals(card, targetPile.Type, owningPlayerIsLocal);
+          cardNode = CardPileCmd.CreateCardNodeAndUpdateVisuals(card, oldPile.Type, targetPile.Type, owningPlayerIsLocal);
         if (cardNode != null)
           cardNodes.Add(cardNode);
       }
@@ -449,7 +449,7 @@ public class CloneOptimizer
           switch (card.Pile.Type)
           {
             case PileType.Hand:
-              CardPileCmd.AppendPileLerpTween(tween, cardNode, card.Pile.Type, oldPile);
+              CardPileCmd.AppendPileLerpTween(tween, cardNode, card.Pile.Type, oldPile.Type);
               if (tween != null)
               {
                 tween.Parallel().TweenCallback(Callable.From((Action) (() => handNode?.Add(cardNode))));
@@ -459,7 +459,7 @@ public class CloneOptimizer
               card.Pile.InvokeCardAddFinished();
               if (oldPile != null && oldPile.Type != PileType.Hand && oldPile.Type != PileType.Play)
               {
-                CardPileCmd.AppendPileLerpTween(tween, cardNode, PileType.Play, oldPile);
+                CardPileCmd.AppendPileLerpTween(tween, cardNode, PileType.Play, oldPile.Type);
                 float num;
                 switch (SaveManager.Instance.PrefsSave.FastMode)
                 {
@@ -512,7 +512,7 @@ public class CloneOptimizer
               }
               continue;
             case PileType.Play:
-              CardPileCmd.AppendPlayPileLerpTween(tween, cardNode, oldPile);
+              CardPileCmd.AppendPlayPileLerpTween(tween, cardNode, oldPile.Type);
               continue;
             default:
               if (tween != null)

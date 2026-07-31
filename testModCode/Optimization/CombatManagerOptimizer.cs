@@ -38,15 +38,16 @@ public static class CombatManagerOptimizer
       }
       
       // I remember I made some optimizations here but i cant remember what
-      private static async Task Helper(Player player, HookPlayerChoiceContext playerChoiceContext, CombatManager __instance)
+      private static async Task Helper(CombatTurnState turnState, Player player, HookPlayerChoiceContext playerChoiceContext, CombatManager __instance)
       {
-        if (__instance._state == null || player.PlayerCombatState == null)
+        if (player.PlayerCombatState == null)
         {
-          Log.Warn($"Combat state is null. Assuming that the run has been cleaned up. (CombatState: {__instance._state} PlayerCombatState: {player.PlayerCombatState})");
+          Log.Warn($"Player combat state is null. Assuming that the run has been cleaned up. (Player: {player.NetId})");
+          
         }
         else
         {
-          CombatState state = __instance._state;
+          var state = turnState.State;
           if (Hook.ShouldPlayerResetEnergy(state, player))
           {
             SfxCmd.Play("event:/sfx/ui/gain_energy");
@@ -55,15 +56,13 @@ public static class CombatManagerOptimizer
           else
             player.PlayerCombatState.AddMaxEnergyToCurrent();
           await Hook.AfterEnergyReset(state, player);
-          CancellationToken combatCt = __instance.CombatCt;
-          combatCt.ThrowIfCancellationRequested();
-          await Hook.BeforeHandDraw(state, player, playerChoiceContext);
-          combatCt = __instance.CombatCt;
-          combatCt.ThrowIfCancellationRequested();
-          Decimal handDraw = Hook.ModifyHandDraw(state, player, 5M, out var modifiers);
+          turnState.Ct.ThrowIfCancellationRequested();
+          await Hook.BeforeHandDraw((ICombatState) state, player, (PlayerChoiceContext) playerChoiceContext);
+          turnState.Ct.ThrowIfCancellationRequested();
+          IEnumerable<AbstractModel> modifiers;
+          Decimal handDraw = Hook.ModifyHandDraw(state, player, 5M, out modifiers);
           await Hook.AfterModifyingHandDraw(state, modifiers);
-          combatCt = __instance.CombatCt;
-          combatCt.ThrowIfCancellationRequested();
+          turnState.Ct.ThrowIfCancellationRequested();
           if (player.PlayerCombatState.TurnNumber == 1)
           {
             CardPile pile = PileType.Draw.GetPile(player);
@@ -85,16 +84,20 @@ public static class CombatManagerOptimizer
             handDraw = Math.Min(handDraw, CardPile.MaxCardsInHand);
           }
           await CardPileCmd.Draw(playerChoiceContext, handDraw, player, true);
-          combatCt = __instance.CombatCt;
-          combatCt.ThrowIfCancellationRequested();
+          turnState.Ct.ThrowIfCancellationRequested();
           await Hook.AfterPlayerTurnStart(state, playerChoiceContext, player);
         }
       }
       
       [HarmonyPrefix]
-      static bool Prefix(Player player, HookPlayerChoiceContext playerChoiceContext, CombatManager __instance, ref Task __result)
+      static bool Prefix(
+        CombatTurnState turnState,
+        Player player, 
+        HookPlayerChoiceContext playerChoiceContext, 
+        CombatManager __instance, 
+        ref Task __result)
       {
-        __result = Helper(player, playerChoiceContext, __instance);
+        __result = Helper(turnState, player, playerChoiceContext, __instance);
         return false;
       }
     }
