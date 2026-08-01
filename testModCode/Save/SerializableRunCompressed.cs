@@ -113,7 +113,8 @@ public class SerializableRunCompressed : ISaveSchema, IPacketSerializable
 
   public void Serialize(PacketWriter writer)
   {
-    writer.WriteInt(99);
+    // replace hard coded value
+    writer.WriteInt(21);
     writer.WriteList(Acts);
     writer.WriteList(Modifiers);
     writer.WriteBool(DailyTime.HasValue);
@@ -230,7 +231,7 @@ public class SerializableRunCompressed : ISaveSchema, IPacketSerializable
   {
     return new SerializableRunCompressed()
     {
-      SchemaVersion = serializableRun.SchemaVersion,
+      SchemaVersion = serializableRun.SchemaVersion+1,
       Acts = serializableRun.Acts,
       Modifiers = serializableRun.Modifiers,
       DailyTime = serializableRun.DailyTime,
@@ -260,7 +261,7 @@ public class SerializableRunCompressed : ISaveSchema, IPacketSerializable
   {
     return new SerializableRun()
     {
-      SchemaVersion = serializableRun.SchemaVersion,
+      SchemaVersion = serializableRun.SchemaVersion-1,
       Acts = serializableRun.Acts,
       Modifiers = serializableRun.Modifiers,
       DailyTime = serializableRun.DailyTime,
