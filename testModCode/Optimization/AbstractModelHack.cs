@@ -23,6 +23,7 @@ public class AbstractModelHack
             {
                 case Guilty:
                 case Dowsing:
+                case ByrdonisEgg:
                     IteratorOptimizer.CardModels.Add(card);
                     //var player = card.Owner;
                     //IteratorOptimizer.GetPlayerCards(player).Add(card);
