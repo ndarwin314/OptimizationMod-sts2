@@ -31,10 +31,10 @@ public class MigrationSubtypesHack
         }
     }
     
-    //[HarmonyPatch(typeof(MigrationManager), nameof(MigrationManager.DeriveAndSetLatestVersions))]
+    [HarmonyPatch(typeof(MigrationManager), nameof(MigrationManager.DeriveAndSetLatestVersions))]
     public class Version
     {
-        [HarmonyPostfix]
+        //[HarmonyPostfix]
         public static void UpdateCurrentVersion(MigrationManager __instance)
         {
             var key = typeof(SerializableRun);
