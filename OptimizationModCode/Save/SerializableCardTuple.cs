@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 using MegaCrit.Sts2.Core.Saves.Runs;
 
-namespace testMod.testModCode.Save;
+namespace OptimizationMod.OptimizationModCode.Save;
 
 public class SerializableCardTuple : IPacketSerializable
 {

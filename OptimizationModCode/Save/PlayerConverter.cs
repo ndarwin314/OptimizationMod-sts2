@@ -5,7 +5,7 @@ using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Runs;
 using MegaCrit.Sts2.Core.Unlocks;
 
-namespace testMod.testModCode.Save;
+namespace OptimizationMod.OptimizationModCode.Save;
 
 public class PlayerConverter: JsonConverter<SerializablePlayer>
 

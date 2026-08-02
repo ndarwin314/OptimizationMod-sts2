@@ -14,26 +14,20 @@ GNU General Public License for more details.
     You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.*/
 
-using Godot;
 using HarmonyLib;
-using MegaCrit.Sts2.Core.Modding;
+using MegaCrit.Sts2.Core.Models.Powers;
 
-namespace testMod.testModCode;
+namespace OptimizationMod.OptimizationModCode.Fixes;
 
-
-[ModInitializer(nameof(Initialize))]
-public partial class MainFile : Node
+[HarmonyPatch(typeof(HardenedShellPower), nameof(HardenedShellPower.ModifyHpLostBeforeOstyLate))]
+public class HardenedShellFix
 {
-    public const string ModId = "testMod";
-
-    public static MegaCrit.Sts2.Core.Logging.Logger Logger { get; } =
-        new(ModId, MegaCrit.Sts2.Core.Logging.LogType.Generic);
-
-    public static void Initialize()
+    // should prevent Skulking colony from healing in the edge case where the boot causes it to take more than
+    // HardenedShellPower.Amount on a turn
+    [HarmonyPostfix]
+    public static void Prefix(ref Decimal __result)
     {
-
-        Harmony harmony = new(ModId);
-
-        harmony.PatchAll();
+        
+        __result = Math.Max(0M, __result);
     }
 }

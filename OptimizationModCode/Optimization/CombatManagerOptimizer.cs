@@ -13,7 +13,9 @@ GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.*/
+
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -21,10 +23,8 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Combat;
 
-
-namespace testMod.testModCode.Optimization;
+namespace OptimizationMod.OptimizationModCode.Optimization;
 
 [HarmonyPatch]
 public static class CombatManagerOptimizer

@@ -13,17 +13,16 @@ GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.*/
+
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Combat;
-using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Runs;
 
-
-namespace testMod.testModCode.Optimization;
+namespace OptimizationMod.OptimizationModCode.Optimization;
 
 
 // At a high level, both of these patches are doing the same 3 things. The first two should have no behavior impact

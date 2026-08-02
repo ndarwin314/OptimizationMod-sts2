@@ -9,6 +9,7 @@
         <AppOutputBase>$(MSBuildProjectDirectory)\</AppOutputBase>
         <PathMap>$(AppOutputBase)=.\</PathMap>
         <GodotDisabledSourceGenerators>GodotPluginsInitializer</GodotDisabledSourceGenerators>
+        <RootNamespace>OptimizationMod</RootNamespace>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -56,15 +57,15 @@
         <!-- <PackageReference Include="Alchyr.Sts2.ModAnalyzers" Version="*"/> -->
         <!-- Generates a .pck file when building if only using simple assets. May not work on all setups. Uncomment to test. -->
         <!-- <PackageReference Include="BSchneppe.StS2.PckPacker" Version="0.1.1" PrivateAssets="All" /> -->
-        <AdditionalFiles Include="testMod/localization/**/*.json"/> <!-- Used by analyzer -->
+        <AdditionalFiles Include="OptimizationMod/localization/**/*.json"/> <!-- Used by analyzer -->
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Remove="testMod/**"/>
+        <Compile Remove="OptimizationMod/**"/>
         <Compile Remove="materials/**"/>
         <Compile Remove="shaders/**"/>
         <Compile Remove="images/**"/>
-        <EmbeddedResource Remove="testMod/**"/>
+        <EmbeddedResource Remove="OptimizationMod/**"/>
         <EmbeddedResource Remove="materials/**"/>
         <EmbeddedResource Remove="shaders/**"/>
         <EmbeddedResource Remove="images/**"/>
@@ -73,9 +74,9 @@
     <ItemGroup>
         <None Condition="Exists('Directory.Build.props')" Include="Directory.Build.props"/>
         <None Include=".gitignore"/>
-        <None Include="testMod.json"/>
+        <None Include="OptimizationMod.json" />
         <None Include="project.godot"/>
-        <None Include="testMod/**"/>
+        <None Include="OptimizationMod/**"/>
     </ItemGroup>
 
     <ItemGroup>

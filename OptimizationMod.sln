@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "testMod", "testMod.csproj", "{0EC41294-58DB-4110-BBA0-9D99901817F8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OptimizationMod", "OptimizationMod.csproj", "{0EC41294-58DB-4110-BBA0-9D99901817F8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

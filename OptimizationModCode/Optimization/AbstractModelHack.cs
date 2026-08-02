@@ -2,7 +2,7 @@ using HarmonyLib;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Cards;
 
-namespace testMod.testModCode.Optimization;
+namespace OptimizationMod.OptimizationModCode.Optimization;
 
 
 // a more robust way of handling this would be to make a subclass of CardModel that overrides the AfterClone method

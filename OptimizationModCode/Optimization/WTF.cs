@@ -1,8 +1,7 @@
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 
-
-namespace testMod.testModCode.Optimization;
+namespace OptimizationMod.OptimizationModCode.Optimization;
 
 // this class gets its name from my reaction to it
 // for some reason, having this patch, which does not change any behavior, prevents some null pointer exception

@@ -17,8 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.*/
 using HarmonyLib;
 using Steamworks;
 
-
-namespace testMod.testModCode.Optimization;
+namespace OptimizationMod.OptimizationModCode.Optimization;
 
 [HarmonyPatch(typeof(SteamAPI), nameof(SteamAPI.IsSteamRunning))]
 public class SteamApiRateLimiter

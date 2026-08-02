@@ -3,7 +3,7 @@ using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Saves.Migrations;
 
-namespace testMod.testModCode.Save;
+namespace OptimizationMod.OptimizationModCode.Save;
 
 public class MigrationSubtypesHack
 {

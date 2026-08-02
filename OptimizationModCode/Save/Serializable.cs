@@ -1,19 +1,10 @@
-using System.Buffers.Binary;
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using HarmonyLib;
-using MegaCrit.Sts2.Core.Entities.Players;
-using MegaCrit.Sts2.Core.Logging;
-using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 using MegaCrit.Sts2.Core.Saves;
-using MegaCrit.Sts2.Core.Saves.Managers;
 using MegaCrit.Sts2.Core.Saves.Runs;
 
-namespace testMod.testModCode.Save;
+namespace OptimizationMod.OptimizationModCode.Save;
 
 public class Serializable
 {
