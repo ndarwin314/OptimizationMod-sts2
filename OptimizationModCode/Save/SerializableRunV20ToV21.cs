@@ -12,7 +12,7 @@ public class SerializableRunV20ToV21: MigrationBase<SerializableRun>
     {
         Log.Info("SerializableRun migration v20 -> v21: Attempting to compress deck");
         var deck = saveData.GetAs<List<SerializableCard>>("deck");
-        var newDeck = PlayerConverter.DeckHelper(deck);
+        var newDeck = Serializable.DeckHelper(deck);
         saveData.Set("deck", newDeck);
 
     }

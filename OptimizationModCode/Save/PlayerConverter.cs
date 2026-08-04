@@ -8,119 +8,7 @@ using MegaCrit.Sts2.Core.Unlocks;
 namespace OptimizationMod.OptimizationModCode.Save;
 
 public class PlayerConverter: JsonConverter<SerializablePlayer>
-
 {
-    public static List<SerializableCardTuple> DeckHelper(IEnumerable<SerializableCard> cards)
-    {
-        Dictionary<SerializableCard, int> cardCounter = new();
-        List<SerializableCardTuple> output = new();
-        foreach (var card in cards)
-        {
-            cardCounter.TryGetValue(card, out int currentCount);
-            cardCounter[card] = currentCount + 1;
-        }
-
-        foreach (var (key, value) in cardCounter)
-        {
-            output.Add(new SerializableCardTuple{Count =  value, Card = key});
-        }
-        return output;
-    }
-    
-    public static List<SerializableCard> DeckUnHelper(List<SerializableCardTuple> cardCounter)
-    {
-        List<SerializableCard> output = new();
-
-        foreach (var tuple in cardCounter)
-        {
-            for (int i=0; i < tuple.Count; ++i) 
-                output.Add(tuple.Card);
-        }
-        return output;
-    }
-    
-    private static void WriteCollectionIfNotEmpty<T>(
-        Utf8JsonWriter writer,
-        string propertyName,
-        List<T>? collection,
-        JsonSerializerOptions options)
-    {
-        if (collection is not { Count: > 0 })
-            return;
-
-        writer.WritePropertyName(propertyName);
-        JsonSerializer.Serialize(writer, collection, options);
-    }
-    
-    private static void WriteSerializable<T>(
-        Utf8JsonWriter writer,
-        string propertyName,
-        T serializable,
-        JsonSerializerOptions options)
-    {
-        writer.WritePropertyName(propertyName);
-        JsonSerializer.Serialize(writer, serializable, options);
-    }
-    
-    private static List<SerializableCard> ReadDeck(
-        ref Utf8JsonReader reader,
-        JsonSerializerOptions options)
-    {
-        if (reader.TokenType != JsonTokenType.StartArray)
-            throw new JsonException();
-
-        var deck = new List<SerializableCard>();
-
-        while (reader.Read())
-        {
-            if (reader.TokenType == JsonTokenType.EndArray)
-                break;
-  
-
-            int count = 1;
-            SerializableCard? card = null;
-
-            while (reader.Read())
-            {
-                if (reader.TokenType == JsonTokenType.EndObject)
-                    break;
-
-                switch (reader.TokenType)
-                {
-                    case JsonTokenType.PropertyName: // reader for SerializableCardTuple
-                    {
-                        string property = reader.GetString()!;
-                        reader.Read();
-
-                        if (property == "count")
-                        {
-                            count = reader.GetInt32();
-                        }
-                        else //body of item, the card we are reading
-                        {
-                            using JsonDocument doc = JsonDocument.ParseValue(ref reader);
-
-                            var json = doc.RootElement.GetRawText();
-                            card = JsonSerializer.Deserialize<SerializableCard>(json, options);
-                        }
-
-                        break;
-                    }
-                    case JsonTokenType.StartObject: // fallback reader for SerializableCard
-                        {using JsonDocument doc = JsonDocument.ParseValue(ref reader);
-
-                        var json = doc.RootElement.GetRawText();
-                        card = JsonSerializer.Deserialize<SerializableCard>(json, options);}
-                        break;
-                }
-            }
-
-            for (int i = 0; i < count; i++)
-                deck.Add(card!);
-        }
-
-        return deck;
-    }
     
     public override SerializablePlayer Read(
         ref Utf8JsonReader reader,
@@ -179,7 +67,7 @@ public class PlayerConverter: JsonConverter<SerializablePlayer>
                     break;
 
                 case "deck":
-                    player.Deck = ReadDeck(ref reader, options);
+                    player.Deck = Serializable.ReadCardList(ref reader, options);
                     break;
 
                 case "relics":
@@ -260,7 +148,7 @@ public class PlayerConverter: JsonConverter<SerializablePlayer>
         JsonSerializer.Serialize(writer, value.CharacterId, options);
         writer.WriteNumber("current_hp", value.CurrentHp);
         
-        var deck = DeckHelper(value.Deck);
+        var deck = Serializable.DeckHelper(value.Deck);
         writer.WriteStartArray("deck");
         // everything else is default at the moment
         // write cards as {"count": count, card : <card_serialization>}
@@ -274,22 +162,22 @@ public class PlayerConverter: JsonConverter<SerializablePlayer>
         }
         writer.WriteEndArray();
         
-        WriteSerializable(writer, "extra_fields", value.ExtraFields, options);
+        Serializable.WriteSerializable(writer, "extra_fields", value.ExtraFields, options);
         writer.WriteNumber("gold", value.Gold);
         writer.WriteNumber("max_energy", value.MaxEnergy);
         writer.WriteNumber("max_hp", value.MaxHp);
         writer.WriteNumber("max_potion_slot_count", value.MaxPotionSlotCount);
         writer.WriteNumber("net_id", value.NetId);
-        WriteSerializable(writer, "odds", value.Odds, options);
-        WriteCollectionIfNotEmpty(writer, "potions", value.Potions, options);
-        WriteSerializable(writer, "relic_grab_bag", value.RelicGrabBag, options);
-        WriteCollectionIfNotEmpty(writer, "relics", value.Relics, options);
-        WriteSerializable(writer, "rng", value.Rng, options);
-        WriteSerializable(writer, "unlock_state", value.UnlockState, options);
-        WriteCollectionIfNotEmpty(writer, "discovered_cards", value.DiscoveredCards, options);
-        WriteCollectionIfNotEmpty(writer, "discovered_enemies", value.DiscoveredEnemies, options);
-        WriteCollectionIfNotEmpty(writer, "discovered_potions", value.DiscoveredPotions, options);
-        WriteCollectionIfNotEmpty(writer, "discovered_relics", value.DiscoveredRelics, options);
+        Serializable. WriteSerializable(writer, "odds", value.Odds, options);
+        Serializable.WriteCollectionIfNotEmpty(writer, "potions", value.Potions, options);
+        Serializable.WriteSerializable(writer, "relic_grab_bag", value.RelicGrabBag, options);
+        Serializable.WriteCollectionIfNotEmpty(writer, "relics", value.Relics, options);
+        Serializable.WriteSerializable(writer, "rng", value.Rng, options);
+        Serializable.WriteSerializable(writer, "unlock_state", value.UnlockState, options);
+        Serializable.WriteCollectionIfNotEmpty(writer, "discovered_cards", value.DiscoveredCards, options);
+        Serializable.WriteCollectionIfNotEmpty(writer, "discovered_enemies", value.DiscoveredEnemies, options);
+        Serializable.WriteCollectionIfNotEmpty(writer, "discovered_potions", value.DiscoveredPotions, options);
+        Serializable.WriteCollectionIfNotEmpty(writer, "discovered_relics", value.DiscoveredRelics, options);
         writer.WriteEndObject();
     }
 }
